@@ -131,6 +131,59 @@ if (mesh.value) {
 </script>
 ```
 
+### Advanced Streaming (Low-Level API)
+
+Use the low-level streaming API for custom data sources:
+
+```vue
+<script setup>
+import { usePeerPigeon, usePeerStreaming } from 'pigeonnest'
+
+const { mesh } = usePeerPigeon()
+const { sendStream, createStreamToPeer } = usePeerStreaming()
+
+// Example 1: Send custom ReadableStream
+const sendCustomData = async (peerId) => {
+  // Create a readable stream from any data source
+  const stream = new ReadableStream({
+    async start(controller) {
+      for (let i = 0; i < 10; i++) {
+        const data = new TextEncoder().encode(`Chunk ${i}\n`)
+        controller.enqueue(data)
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+      controller.close()
+    }
+  })
+  
+  await sendStream(mesh.value, peerId, stream, {
+    filename: 'custom-data.txt',
+    mimeType: 'text/plain',
+    totalSize: 100
+  })
+}
+
+// Example 2: Use WritableStream for manual control
+const sendWithManualControl = async (peerId) => {
+  const writable = createStreamToPeer(mesh.value, peerId, {
+    filename: 'manual-data.bin',
+    totalSize: 1024
+  })
+  
+  const writer = writable.getWriter()
+  
+  try {
+    await writer.write(new Uint8Array([1, 2, 3, 4]))
+    await writer.write(new Uint8Array([5, 6, 7, 8]))
+    await writer.close()
+  } catch (error) {
+    await writer.abort(error)
+    throw error
+  }
+}
+</script>
+```
+
 ### Distributed Storage
 
 ```vue
@@ -199,13 +252,15 @@ Main composable for managing the PeerPigeon mesh network.
 
 ### usePeerStreaming()
 
-Composable for handling file and data streaming (PigeonFS).
+Composable for handling file and data streaming (PigeonFS) using readable/writable streams.
 
 **Returns:**
 - `activeStreams` - Map of active stream transfers
 - `incomingStream` - Current incoming stream
 - `sendFile(mesh, peerId, file)` - Send a File object
 - `sendBlob(mesh, peerId, blob, options)` - Send a Blob
+- `sendStream(mesh, peerId, stream, options)` - Send a ReadableStream (low-level API)
+- `createStreamToPeer(mesh, peerId, options)` - Create a WritableStream to peer (low-level API)
 - `receiveStream(event)` - Receive and process a stream
 - `cancelStream(streamId)` - Cancel an active stream
 

@@ -7,6 +7,8 @@ export interface UsePeerStreamingReturn {
   incomingStream: Ref<StreamEvent | null>
   sendFile: (mesh: PeerPigeonMesh, peerId: string, file: File) => Promise<void>
   sendBlob: (mesh: PeerPigeonMesh, peerId: string, blob: Blob, options?: Partial<StreamMetadata>) => Promise<void>
+  sendStream: (mesh: PeerPigeonMesh, peerId: string, stream: ReadableStream<Uint8Array>, options?: Partial<StreamMetadata>) => Promise<void>
+  createStreamToPeer: (mesh: PeerPigeonMesh, peerId: string, options?: Partial<StreamMetadata>) => WritableStream<Uint8Array>
   receiveStream: (event: StreamEvent) => Promise<Blob>
   cancelStream: (streamId: string) => void
 }
@@ -214,6 +216,73 @@ export function usePeerStreaming(): UsePeerStreamingReturn {
     updateStreamProgress(streamId, { status: 'cancelled' })
   }
 
+  const sendStream = async (
+    mesh: PeerPigeonMesh,
+    peerId: string,
+    stream: ReadableStream<Uint8Array>,
+    options: Partial<StreamMetadata> = {}
+  ): Promise<void> => {
+    const streamId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const controller = new AbortController()
+    streamControllers.set(streamId, controller)
+
+    const filename = options.filename || 'stream'
+    const totalSize = options.totalSize || 0
+
+    activeStreams.value.set(streamId, {
+      streamId,
+      peerId,
+      filename,
+      totalSize,
+      bytesTransferred: 0,
+      progress: 0,
+      status: 'pending'
+    })
+    // Trigger reactivity
+    activeStreams.value = new Map(activeStreams.value)
+
+    try {
+      updateStreamProgress(streamId, { status: 'active' })
+
+      const progressHandler = (event: any) => {
+        if (event.streamId === streamId) {
+          updateStreamProgress(streamId, {
+            bytesTransferred: event.bytesTransferred,
+            progress: event.progress
+          })
+        }
+      }
+
+      mesh.addEventListener('streamProgress', progressHandler)
+
+      await mesh.sendStream(peerId, stream, options)
+
+      updateStreamProgress(streamId, {
+        status: 'completed',
+        progress: 100,
+        bytesTransferred: totalSize
+      })
+
+      mesh.removeEventListener('streamProgress', progressHandler)
+    } catch (error) {
+      updateStreamProgress(streamId, {
+        status: 'error',
+        error: error instanceof Error ? error : new Error(String(error))
+      })
+      throw error
+    } finally {
+      streamControllers.delete(streamId)
+    }
+  }
+
+  const createStreamToPeer = (
+    mesh: PeerPigeonMesh,
+    peerId: string,
+    options: Partial<StreamMetadata> = {}
+  ): WritableStream<Uint8Array> => {
+    return mesh.createStreamToPeer(peerId, options)
+  }
+
   onUnmounted(() => {
     // Cancel all active streams
     streamControllers.forEach(controller => controller.abort())
@@ -225,6 +294,8 @@ export function usePeerStreaming(): UsePeerStreamingReturn {
     incomingStream,
     sendFile,
     sendBlob,
+    sendStream,
+    createStreamToPeer,
     receiveStream,
     cancelStream
   }

@@ -299,6 +299,36 @@ mesh.value.addEventListener('message', (event) => {
 })
 ```
 
+### Stream Data (Readable/Writable Streams)
+
+PigeonNest uses PeerPigeon's readable/writable streams API for efficient data transfer:
+
+```javascript
+// High-level API (recommended for most use cases)
+await sendFile(mesh.value, peerId, file)
+await sendBlob(mesh.value, peerId, blob, { filename: 'data.bin' })
+
+// Low-level API for custom streams
+const stream = new ReadableStream({
+  start(controller) {
+    controller.enqueue(new Uint8Array([1, 2, 3]))
+    controller.close()
+  }
+})
+await sendStream(mesh.value, peerId, stream, {
+  filename: 'custom.bin',
+  totalSize: 3
+})
+
+// Manual control with WritableStream
+const writable = createStreamToPeer(mesh.value, peerId, {
+  filename: 'manual.bin'
+})
+const writer = writable.getWriter()
+await writer.write(new Uint8Array([4, 5, 6]))
+await writer.close()
+```
+
 ### Stream Large Files
 
 ```javascript
