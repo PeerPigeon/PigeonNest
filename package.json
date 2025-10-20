@@ -38,7 +38,7 @@
   "author": "PeerPigeon Contributors",
   "license": "MIT",
   "dependencies": {
-    "peerpigeon": "^1.0.4",
+    "peerpigeon": "github:PeerPigeon/PeerPigeon",
     "vue": "^3.5.22"
   },
   "devDependencies": {

@@ -302,7 +302,7 @@ npm run dev
 
 ## PeerPigeon Integration
 
-PigeonNest is built on top of PeerPigeon 1.0.4+. Key concepts:
+PigeonNest is built on top of PeerPigeon 1.0.5. Key concepts:
 
 - **PigeonHub** - Signaling server for peer discovery (WebSocket-based)
 - **PigeonFS** - File system operations using readable/writable streams

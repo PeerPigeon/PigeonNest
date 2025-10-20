@@ -103,7 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Dependencies
 - vue ^3.5.22
-- peerpigeon ^1.0.4
+- peerpigeon github:PeerPigeon/PeerPigeon (1.0.5)
 
 ### Dev Dependencies
 - vite ^5.4.21
@@ -120,7 +120,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Notes
 - Initial release of PigeonNest framework
-- Based on PeerPigeon 1.0.4 protocol
+- Based on PeerPigeon 1.0.5 protocol
 - Supports WebRTC peer-to-peer connections
 - Implements Web Streams API for efficient file transfers
 - Full integration with PeerPigeon hub system

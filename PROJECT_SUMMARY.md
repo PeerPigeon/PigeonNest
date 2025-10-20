@@ -2,7 +2,7 @@
 
 ## Overview
 
-PigeonNest is a complete Vue 3 component library and framework for building peer-to-peer applications using the PeerPigeon protocol (version 1.0.4). It provides developers with ready-to-use components, composables, and tools to quickly build WebRTC-based mesh networking applications.
+PigeonNest is a complete Vue 3 component library and framework for building peer-to-peer applications using the PeerPigeon protocol (version 1.0.5). It provides developers with ready-to-use components, composables, and tools to quickly build WebRTC-based mesh networking applications.
 
 ## Key Features
 
@@ -77,7 +77,7 @@ PigeonNest is a complete Vue 3 component library and framework for building peer
 ### 📦 Technology Stack
 
 - **Vue 3** (3.5.22) - Composition API
-- **PeerPigeon** (1.0.4) - P2P protocol
+- **PeerPigeon** (1.0.5) - P2P protocol
 - **TypeScript** (5.9.3) - Type safety
 - **Vite** (5.4.21) - Build tool
 - **Vitest** (1.6.1) - Testing framework
