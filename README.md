@@ -1,4 +1,4 @@
-# 🐦 PigeonNest
+# PigeonNest
 
 A comprehensive Vue 3 component library and framework for building peer-to-peer applications with PeerPigeon.
 
