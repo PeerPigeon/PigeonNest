@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PigeonNest Complete Example</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      min-height: 100vh;
+    }
+    
+    #app {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+    }
+    
+    .header h1 {
+      font-size: 42px;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .header p {
+      font-size: 18px;
+      opacity: 0.9;
+    }
+    
+    .main-grid {
+      display: grid;
+      grid-template-columns: 350px 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .content {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .card {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .card h2 {
+      font-size: 20px;
+      margin-bottom: 16px;
+      color: #333;
+      border-bottom: 3px solid #667eea;
+      padding-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    button.primary {
+      background: #667eea;
+      color: white;
+    }
+    
+    button.primary:hover:not(:disabled) {
+      background: #5568d3;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+    }
+    
+    button.secondary {
+      background: #f5f5f5;
+      color: #333;
+      border: 1px solid #e0e0e0;
+    }
+    
+    button.secondary:hover:not(:disabled) {
+      background: #e0e0e0;
+    }
+    
+    button.success {
+      background: #4caf50;
+      color: white;
+    }
+    
+    button.success:hover:not(:disabled) {
+      background: #45a049;
+    }
+    
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    
+    .stat-label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    
+    .tab {
+      padding: 12px 24px;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-weight: 600;
+      color: #666;
+      transition: all 0.2s;
+    }
+    
+    .tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+    
+    .tab:hover {
+      color: #667eea;
+    }
+    
+    @media (max-width: 1024px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="header">
+      <h1>🐦 PigeonNest</h1>
+      <p>Complete Vue 3 Framework for PeerPigeon Development</p>
+    </div>
+    
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">{{ connectedPeerIds.length }}</div>
+        <div class="stat-label">Connected Peers</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ activeStreamsArray.length }}</div>
+        <div class="stat-label">Active Transfers</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ isConnected ? 'Online' : 'Offline' }}</div>
+        <div class="stat-label">Status</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ storageEntries.size }}</div>
+        <div class="stat-label">Storage Entries</div>
+      </div>
+    </div>
+    
+    <div class="main-grid">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <!-- Configuration -->
+        <div class="card">
+          <h2>⚙️ Configuration</h2>
+          
+          <peer-id-input
+            v-model="peerId"
+            :show-generate-button="true"
+          />
+          
+          <network-name-input
+            v-model="networkName"
+            :show-presets="true"
+          />
+          
+          <hub-url-input
+            v-model="hubUrl"
+            :show-presets="true"
+          />
+          
+          <div class="button-group">
+            <button class="primary" @click="initialize" :disabled="isInitialized">
+              🚀 Initialize
+            </button>
+            <button class="success" @click="connectToHub" :disabled="!isInitialized || isConnected">
+              🔗 Connect
+            </button>
+          </div>
+          <div class="button-group" style="margin-top: 8px;">
+            <button class="secondary" @click="disconnect" :disabled="!isConnected">
+              🔌 Disconnect
+            </button>
+          </div>
+        </div>
+        
+        <!-- Status -->
+        <div class="card">
+          <h2>📊 Status</h2>
+          <peer-connection-status 
+            :status="status" 
+            :is-connected="isConnected"
+          />
+        </div>
+        
+        <!-- Peers -->
+        <div class="card">
+          <h2>👥 Peers</h2>
+          <peer-list 
+            :peers="connectedPeerIds.map(id => ({ peerId: id, discoveredAt: Date.now() }))"
+            @select="selectedPeer = $event"
+            @message="openMessageDialog"
+            @file="openFileDialog"
+            :selected-peer-id="selectedPeer"
+          />
+        </div>
+      </div>
+      
+      <!-- Content -->
+      <div class="content">
+        <!-- Tabs -->
+        <div class="card">
+          <div class="tabs">
+            <button class="tab" :class="{ active: activeTab === 'files' }" @click="activeTab = 'files'">
+              📁 Files
+            </button>
+            <button class="tab" :class="{ active: activeTab === 'storage' }" @click="activeTab = 'storage'">
+              💾 Storage
+            </button>
+            <button class="tab" :class="{ active: activeTab === 'messages' }" @click="activeTab = 'messages'">
+              💬 Messages
+            </button>
+          </div>
+          
+          <!-- Files Tab -->
+          <div v-if="activeTab === 'files'">
+            <peer-selector
+              v-model="selectedPeer"
+              :peers="connectedPeerIds"
+              label="Send files to:"
+            />
+            
+            <file-upload 
+              :target-peer-id="selectedPeer"
+              @upload="handleFileUpload"
+              :multiple="true"
+            />
+            
+            <div v-if="activeStreamsArray.length > 0" style="margin-top: 20px;">
+              <h3 style="margin-bottom: 16px; color: #333;">Active Transfers</h3>
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <stream-progress 
+                  v-for="stream in activeStreamsArray" 
+                  :key="stream.streamId"
+                  :stream="stream"
+                  @cancel="cancelStream"
+                  @dismiss="dismissStream"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <!-- Storage Tab -->
+          <div v-if="activeTab === 'storage'">
+            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+              <input 
+                v-model="storageKey" 
+                type="text" 
+                placeholder="Key"
+                style="flex: 1; padding: 10px; border: 1px solid #e0e0e0; border-radius: 6px;"
+              />
+              <input 
+                v-model="storageValue" 
+                type="text" 
+                placeholder="Value"
+                style="flex: 1; padding: 10px; border: 1px solid #e0e0e0; border-radius: 6px;"
+              />
+            </div>
+            <div class="button-group">
+              <button class="primary" @click="saveToStorage" :disabled="!mesh || !storageKey">
+                💾 Save
+              </button>
+              <button class="secondary" @click="loadFromStorage" :disabled="!mesh || !storageKey">
+                📥 Load
+              </button>
+              <button class="secondary" @click="deleteFromStorage" :disabled="!mesh || !storageKey">
+                🗑️ Delete
+              </button>
+              <button class="secondary" @click="refreshStorage" :disabled="!mesh">
+                🔄 Refresh
+              </button>
+            </div>
+            
+            <div v-if="storageEntries.size > 0" style="margin-top: 20px;">
+              <h3 style="margin-bottom: 12px; color: #333;">Storage Entries ({{ storageEntries.size }})</h3>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div 
+                  v-for="[key, entry] in storageEntries" 
+                  :key="key"
+                  style="padding: 12px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafafa;"
+                >
+                  <div style="font-weight: 600; margin-bottom: 4px; font-family: monospace; color: #667eea;">
+                    {{ key }}
+                  </div>
+                  <div style="font-size: 14px; color: #666; word-break: break-all;">
+                    {{ JSON.stringify(entry.value) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Messages Tab -->
+          <div v-if="activeTab === 'messages'">
+            <peer-selector
+              v-model="selectedPeer"
+              :peers="connectedPeerIds"
+              label="Send message to:"
+            />
+            
+            <div style="display: flex; gap: 8px; margin: 16px 0;">
+              <input 
+                v-model="messageText" 
+                type="text" 
+                placeholder="Type a message..."
+                @keyup.enter="sendMessageToPeer"
+                style="flex: 1; padding: 10px; border: 1px solid #e0e0e0; border-radius: 6px;"
+              />
+              <button class="primary" @click="sendMessageToPeer" :disabled="!selectedPeer || !messageText">
+                📤 Send
+              </button>
+              <button class="secondary" @click="broadcastMessage" :disabled="!messageText">
+                📢 Broadcast
+              </button>
+            </div>
+            
+            <div style="background: #fafafa; border: 1px solid #e0e0e0; border-radius: 6px; padding: 16px; max-height: 400px; overflow-y: auto;">
+              <div v-for="(msg, index) in messages" :key="index" style="padding: 8px 0; border-bottom: 1px solid #e0e0e0;">
+                <div style="font-size: 11px; color: #999; margin-bottom: 4px;">
+                  <strong>{{ formatTime(msg.timestamp) }}</strong>
+                </div>
+                <div style="font-size: 14px; color: #333;">
+                  {{ msg.text }}
+                </div>
+              </div>
+              <div v-if="messages.length === 0" style="text-align: center; color: #999; padding: 40px 0;">
+                No messages yet
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createApp } from 'vue'
+    import { 
+      usePeerPigeon, 
+      usePeerStreaming,
+      usePeerStorage,
+      PeerConnectionStatus,
+      PeerList,
+      FileUpload,
+      StreamProgress,
+      HubUrlInput,
+      PeerIdInput,
+      NetworkNameInput,
+      PeerSelector
+    } from '../src/index.ts'
+    
+    const app = createApp({
+      components: {
+        PeerConnectionStatus,
+        PeerList,
+        FileUpload,
+        StreamProgress,
+        HubUrlInput,
+        PeerIdInput,
+        NetworkNameInput,
+        PeerSelector
+      },
+      setup() {
+        const peerId = Vue.ref('')
+        const networkName = Vue.ref('pigeonnest-demo')
+        const hubUrl = Vue.ref('ws://localhost:3000')
+        const selectedPeer = Vue.ref(null)
+        const messages = Vue.ref([])
+        const activeTab = Vue.ref('files')
+        const storageKey = Vue.ref('')
+        const storageValue = Vue.ref('')
+        const messageText = Vue.ref('')
+        
+        const {
+          mesh,
+          status,
+          isConnected,
+          isInitialized,
+          connectedPeerIds,
+          init,
+          connect,
+          disconnect: disconnectMesh,
+          sendMessage,
+          broadcast
+        } = usePeerPigeon()
+        
+        const {
+          activeStreams,
+          sendFile,
+          receiveStream,
+          cancelStream: cancelStreamComposable
+        } = usePeerStreaming()
+        
+        const {
+          entries: storageEntries,
+          set: setStorage,
+          get: getStorage,
+          delete: deleteStorage,
+          refreshEntries
+        } = usePeerStorage()
+        
+        const addMessage = (text) => {
+          messages.value.unshift({
+            text,
+            timestamp: Date.now()
+          })
+          if (messages.value.length > 100) {
+            messages.value = messages.value.slice(0, 100)
+          }
+        }
+        
+        const initialize = async () => {
+          try {
+            const options = {
+              networkName: networkName.value,
+              maxPeers: 5,
+              minPeers: 1
+            }
+            
+            if (peerId.value) {
+              options.peerId = peerId.value
+            }
+            
+            const result = usePeerPigeon(options)
+            Object.assign({
+              mesh,
+              status,
+              isConnected,
+              isInitialized,
+              connectedPeerIds
+            }, result)
+            
+            await init()
+            addMessage('✅ Mesh initialized with ID: ' + status.value.peerId.substring(0, 8) + '...')
+            
+            if (mesh.value) {
+              mesh.value.addEventListener('peerConnected', (e) => {
+                addMessage(`🔗 Peer connected: ${e.peerId.substring(0, 8)}...`)
+              })
+              
+              mesh.value.addEventListener('peerDisconnected', (e) => {
+                addMessage(`❌ Peer disconnected: ${e.peerId.substring(0, 8)}...`)
+              })
+              
+              mesh.value.addEventListener('message', (e) => {
+                addMessage(`💬 Message from ${e.peerId.substring(0, 8)}...: ${e.data}`)
+              })
+              
+              mesh.value.addEventListener('streamReceived', async (e) => {
+                addMessage(`📥 Receiving file: ${e.metadata.filename}`)
+                try {
+                  const blob = await receiveStream(e)
+                  addMessage(`✅ File received: ${e.metadata.filename}`)
+                  
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = e.metadata.filename
+                  a.click()
+                  URL.revokeObjectURL(url)
+                } catch (err) {
+                  addMessage(`❌ Error receiving file: ${err.message}`)
+                }
+              })
+            }
+          } catch (err) {
+            addMessage(`❌ Initialization failed: ${err.message}`)
+          }
+        }
+        
+        const connectToHub = async () => {
+          try {
+            await connect(hubUrl.value)
+            addMessage(`✅ Connected to hub: ${hubUrl.value}`)
+          } catch (err) {
+            addMessage(`❌ Connection failed: ${err.message}`)
+          }
+        }
+        
+        const disconnect = () => {
+          disconnectMesh()
+          addMessage('🔌 Disconnected')
+        }
+        
+        const handleFileUpload = async (files) => {
+          if (!selectedPeer.value) {
+            addMessage('❌ No peer selected')
+            return
+          }
+          
+          for (const file of files) {
+            try {
+              addMessage(`📤 Sending ${file.name} to ${selectedPeer.value.substring(0, 8)}...`)
+              await sendFile(mesh.value, selectedPeer.value, file)
+              addMessage(`✅ Sent ${file.name}`)
+            } catch (err) {
+              addMessage(`❌ Failed to send ${file.name}: ${err.message}`)
+            }
+          }
+        }
+        
+        const sendMessageToPeer = async () => {
+          if (!selectedPeer.value || !messageText.value) return
+          try {
+            await sendMessage(selectedPeer.value, messageText.value)
+            addMessage(`📤 Sent to ${selectedPeer.value.substring(0, 8)}...: ${messageText.value}`)
+            messageText.value = ''
+          } catch (err) {
+            addMessage(`❌ Failed to send message: ${err.message}`)
+          }
+        }
+        
+        const broadcastMessage = async () => {
+          if (!messageText.value) return
+          try {
+            await broadcast(messageText.value)
+            addMessage(`📢 Broadcast: ${messageText.value}`)
+            messageText.value = ''
+          } catch (err) {
+            addMessage(`❌ Failed to broadcast: ${err.message}`)
+          }
+        }
+        
+        const saveToStorage = async () => {
+          if (!mesh.value || !storageKey.value) return
+          try {
+            await setStorage(mesh.value, storageKey.value, storageValue.value)
+            addMessage(`💾 Saved: ${storageKey.value} = ${storageValue.value}`)
+            storageKey.value = ''
+            storageValue.value = ''
+          } catch (err) {
+            addMessage(`❌ Failed to save: ${err.message}`)
+          }
+        }
+        
+        const loadFromStorage = async () => {
+          if (!mesh.value || !storageKey.value) return
+          try {
+            const value = await getStorage(mesh.value, storageKey.value)
+            storageValue.value = value
+            addMessage(`📥 Loaded: ${storageKey.value} = ${value}`)
+          } catch (err) {
+            addMessage(`❌ Failed to load: ${err.message}`)
+          }
+        }
+        
+        const deleteFromStorage = async () => {
+          if (!mesh.value || !storageKey.value) return
+          try {
+            await deleteStorage(mesh.value, storageKey.value)
+            addMessage(`🗑️ Deleted: ${storageKey.value}`)
+            storageKey.value = ''
+            storageValue.value = ''
+          } catch (err) {
+            addMessage(`❌ Failed to delete: ${err.message}`)
+          }
+        }
+        
+        const refreshStorage = async () => {
+          if (!mesh.value) return
+          try {
+            await refreshEntries(mesh.value)
+            addMessage(`🔄 Storage refreshed: ${storageEntries.value.size} entries`)
+          } catch (err) {
+            addMessage(`❌ Failed to refresh: ${err.message}`)
+          }
+        }
+        
+        const openMessageDialog = (peerId) => {
+          selectedPeer.value = peerId
+          activeTab.value = 'messages'
+        }
+        
+        const openFileDialog = (peerId) => {
+          selectedPeer.value = peerId
+          activeTab.value = 'files'
+        }
+        
+        const cancelStream = (streamId) => {
+          cancelStreamComposable(streamId)
+          addMessage(`🚫 Cancelled stream: ${streamId}`)
+        }
+        
+        const dismissStream = (streamId) => {
+          activeStreams.value.delete(streamId)
+          activeStreams.value = new Map(activeStreams.value)
+        }
+        
+        const activeStreamsArray = Vue.computed(() => 
+          Array.from(activeStreams.value.values())
+        )
+        
+        const formatTime = (timestamp) => {
+          const date = new Date(timestamp)
+          return date.toLocaleTimeString()
+        }
+        
+        return {
+          peerId,
+          networkName,
+          hubUrl,
+          selectedPeer,
+          messages,
+          activeTab,
+          storageKey,
+          storageValue,
+          messageText,
+          status,
+          isConnected,
+          isInitialized,
+          connectedPeerIds,
+          activeStreamsArray,
+          storageEntries,
+          mesh,
+          initialize,
+          connectToHub,
+          disconnect,
+          handleFileUpload,
+          sendMessageToPeer,
+          broadcastMessage,
+          saveToStorage,
+          loadFromStorage,
+          deleteFromStorage,
+          refreshStorage,
+          openMessageDialog,
+          openFileDialog,
+          cancelStream,
+          dismissStream,
+          formatTime
+        }
+      }
+    })
+    
+    app.mount('#app')
+  </script>
+</body>
+</html>
