@@ -1,0 +1,51 @@
+{
+  "name": "pigeonnest",
+  "version": "1.0.0",
+  "description": "A Vue 3 framework for PeerPigeon application development",
+  "type": "module",
+  "main": "./dist/pigeon-nest.umd.js",
+  "module": "./dist/pigeon-nest.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/pigeon-nest.es.js",
+      "require": "./dist/pigeon-nest.umd.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "vue",
+    "vue3",
+    "peerpigeon",
+    "webrtc",
+    "p2p",
+    "mesh-network",
+    "peer-to-peer",
+    "composables",
+    "components"
+  ],
+  "author": "PeerPigeon Contributors",
+  "license": "MIT",
+  "dependencies": {
+    "peerpigeon": "^1.0.4",
+    "vue": "^3.5.22"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.22",
+    "@vitejs/plugin-vue": "^5.2.4",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21",
+    "vitest": "^1.6.1"
+  }
+}
