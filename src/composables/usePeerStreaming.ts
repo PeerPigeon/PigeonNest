@@ -1,11 +1,13 @@
 import { ref, onUnmounted, Ref } from 'vue'
-import type { PeerPigeonMesh } from 'peerpigeon'
-import type { StreamEvent, StreamProgressEvent, StreamMetadata } from '../types'
+import type { PeerPigeonMeshInstance as PeerPigeonMesh } from 'peerpigeon'
+import type { StreamEvent, StreamMetadata } from '../types'
 
 export interface UsePeerStreamingReturn {
   activeStreams: Ref<Map<string, StreamProgress>>
   incomingStream: Ref<StreamEvent | null>
   sendFile: (mesh: PeerPigeonMesh, peerId: string, file: File) => Promise<void>
+  sendFileToMultiplePeers: (mesh: PeerPigeonMesh, peerIds: string[], file: File) => Promise<void>
+  sendFilesToTarget: (mesh: PeerPigeonMesh, target: string | string[], files: File[]) => Promise<void>
   sendBlob: (mesh: PeerPigeonMesh, peerId: string, blob: Blob, options?: Partial<StreamMetadata>) => Promise<void>
   sendStream: (mesh: PeerPigeonMesh, peerId: string, stream: ReadableStream<Uint8Array>, options?: Partial<StreamMetadata>) => Promise<void>
   createStreamToPeer: (mesh: PeerPigeonMesh, peerId: string, options?: Partial<StreamMetadata>) => WritableStream<Uint8Array>
@@ -22,6 +24,8 @@ export interface StreamProgress {
   progress: number
   status: 'pending' | 'active' | 'completed' | 'error' | 'cancelled'
   error?: Error
+  receivedBlob?: Blob
+  metadata?: StreamMetadata
 }
 
 export function usePeerStreaming(): UsePeerStreamingReturn {
@@ -163,7 +167,8 @@ export function usePeerStreaming(): UsePeerStreamingReturn {
       totalSize: metadata.totalSize,
       bytesTransferred: 0,
       progress: 0,
-      status: 'active'
+      status: 'active',
+      metadata
     }
 
     activeStreams.value.set(streamId, streamProgress)
@@ -171,7 +176,7 @@ export function usePeerStreaming(): UsePeerStreamingReturn {
     activeStreams.value = new Map(activeStreams.value)
 
     try {
-      const chunks: Uint8Array[] = []
+  const chunks: BlobPart[] = []
       const reader = stream.getReader()
       let bytesReceived = 0
 
@@ -179,8 +184,8 @@ export function usePeerStreaming(): UsePeerStreamingReturn {
         const { done, value } = await reader.read()
         if (done) break
 
-        chunks.push(value)
-        bytesReceived += value.length
+  chunks.push(value as unknown as BlobPart)
+  bytesReceived += value.byteLength
 
         const progress = metadata.totalSize > 0 
           ? (bytesReceived / metadata.totalSize) * 100 
@@ -192,12 +197,15 @@ export function usePeerStreaming(): UsePeerStreamingReturn {
         })
       }
 
+      const blob = new Blob(chunks, { type: metadata.mimeType })
+      
       updateStreamProgress(streamId, {
         status: 'completed',
-        progress: 100
+        progress: 100,
+        receivedBlob: blob
       })
 
-      return new Blob(chunks, { type: metadata.mimeType })
+      return blob
     } catch (error) {
       updateStreamProgress(streamId, {
         status: 'error',
@@ -214,6 +222,42 @@ export function usePeerStreaming(): UsePeerStreamingReturn {
       streamControllers.delete(streamId)
     }
     updateStreamProgress(streamId, { status: 'cancelled' })
+  }
+
+  const sendFileToMultiplePeers = async (
+    mesh: PeerPigeonMesh,
+    peerIds: string[],
+    file: File
+  ): Promise<void> => {
+    if (peerIds.length === 0) {
+      throw new Error('No peer IDs provided')
+    }
+    // Send file to each peer
+    await Promise.all(
+      peerIds.map(peerId => sendFile(mesh, peerId, file))
+    )
+  }
+
+  const sendFilesToTarget = async (
+    mesh: PeerPigeonMesh,
+    target: string | string[],
+    files: File[]
+  ): Promise<void> => {
+    if (files.length === 0) {
+      throw new Error('No files provided')
+    }
+    
+    if (Array.isArray(target)) {
+      // Send each file to multiple peers
+      for (const file of files) {
+        await sendFileToMultiplePeers(mesh, target, file)
+      }
+    } else {
+      // Send each file to a single peer
+      for (const file of files) {
+        await sendFile(mesh, target, file)
+      }
+    }
   }
 
   const sendStream = async (
@@ -293,6 +337,8 @@ export function usePeerStreaming(): UsePeerStreamingReturn {
     activeStreams,
     incomingStream,
     sendFile,
+    sendFileToMultiplePeers,
+    sendFilesToTarget,
     sendBlob,
     sendStream,
     createStreamToPeer,

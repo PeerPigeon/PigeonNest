@@ -26,7 +26,7 @@
         
         <div v-if="showActions" class="peer-actions">
           <button 
-            v-if="onMessage"
+            v-if="showMessageButton"
             @click.stop="$emit('message', peer.peerId)"
             class="action-btn"
             title="Send message"
@@ -34,7 +34,7 @@
             💬
           </button>
           <button 
-            v-if="onFile"
+            v-if="showFileButton"
             @click.stop="$emit('file', peer.peerId)"
             class="action-btn"
             title="Send file"
@@ -48,6 +48,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { PeerInfo } from '../types'
 
 interface PeerListProps {
@@ -57,8 +58,16 @@ interface PeerListProps {
   showTimestamp?: boolean
   showActions?: boolean
   selectedPeerId?: string | null
-  onMessage?: boolean
-  onFile?: boolean
+  /**
+   * @deprecated Use showMessageAction instead. Kept for backward compatibility.
+   */
+  onMessage?: boolean | ((...args: unknown[]) => unknown)
+  /**
+   * @deprecated Use showFileAction instead. Kept for backward compatibility.
+   */
+  onFile?: boolean | ((...args: unknown[]) => unknown)
+  showMessageAction?: boolean
+  showFileAction?: boolean
 }
 
 const props = withDefaults(defineProps<PeerListProps>(), {
@@ -66,8 +75,22 @@ const props = withDefaults(defineProps<PeerListProps>(), {
   emptyMessage: 'No peers connected',
   showTimestamp: true,
   showActions: true,
-  onMessage: true,
-  onFile: true
+  showMessageAction: true,
+  showFileAction: true
+})
+
+const showMessageButton = computed(() => {
+  if (typeof props.onMessage === 'boolean') {
+    return props.onMessage
+  }
+  return props.showMessageAction
+})
+
+const showFileButton = computed(() => {
+  if (typeof props.onFile === 'boolean') {
+    return props.onFile
+  }
+  return props.showFileAction
 })
 
 defineEmits<{
@@ -88,7 +111,7 @@ const formatTimestamp = (timestamp: number): string => {
   const minutes = Math.floor(seconds / 60)
   const hours = Math.floor(minutes / 60)
   const days = Math.floor(hours / 24)
-  
+
   if (days > 0) return `${days}d ago`
   if (hours > 0) return `${hours}h ago`
   if (minutes > 0) return `${minutes}m ago`

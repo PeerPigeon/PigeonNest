@@ -27,7 +27,7 @@
       </div>
     </div>
     
-    <div v-if="selectedFiles.length > 0" class="file-list">
+    <div class="file-list">
       <div v-for="(file, index) in selectedFiles" :key="index" class="file-item">
         <div class="file-info">
           <div class="file-name">{{ file.name }}</div>
@@ -39,11 +39,11 @@
       </div>
     </div>
     
-    <div v-if="selectedFiles.length > 0 && targetPeerId" class="upload-actions">
-      <button @click="uploadFiles" :disabled="uploading" class="upload-btn">
-        {{ uploading ? 'Uploading...' : `Upload ${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''}` }}
+    <div class="upload-actions">
+      <button @click="uploadFiles" :disabled="uploading || selectedFiles.length === 0" class="upload-btn">
+        {{ uploading ? 'Uploading...' : selectedFiles.length > 0 ? `Upload ${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''}` : 'Select files to upload' }}
       </button>
-      <button @click="clearFiles" :disabled="uploading" class="clear-btn">
+      <button @click="clearFiles" :disabled="uploading || selectedFiles.length === 0" class="clear-btn">
         Clear
       </button>
     </div>
@@ -56,7 +56,7 @@ import { ref } from 'vue'
 interface FileUploadProps {
   multiple?: boolean
   accept?: string
-  targetPeerId?: string
+  targetPeerId?: string | string[]
   primaryText?: string
   secondaryText?: string
 }
@@ -69,7 +69,7 @@ const props = withDefaults(defineProps<FileUploadProps>(), {
 })
 
 const emit = defineEmits<{
-  upload: [files: File[]]
+  upload: [files: File[], targetPeerId: string | string[] | undefined]
   change: [files: File[]]
 }>()
 
@@ -122,7 +122,7 @@ const uploadFiles = async () => {
   if (selectedFiles.value.length === 0) return
   uploading.value = true
   try {
-    emit('upload', selectedFiles.value)
+    emit('upload', selectedFiles.value, props.targetPeerId)
   } finally {
     uploading.value = false
   }

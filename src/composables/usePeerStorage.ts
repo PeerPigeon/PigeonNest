@@ -1,5 +1,5 @@
 import { ref, Ref } from 'vue'
-import type { PeerPigeonMesh } from 'peerpigeon'
+import type { PeerPigeonMeshInstance as PeerPigeonMesh } from 'peerpigeon'
 import type { StorageEntry } from '../types'
 
 export interface UsePeerStorageReturn {
