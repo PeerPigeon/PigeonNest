@@ -29,7 +29,7 @@ interface PeerOption {
 }
 
 interface PeerSelectorProps {
-  modelValue: string
+  modelValue: string | null
   peers: (string | PeerOption)[]
   label?: string
   placeholder?: string
@@ -49,8 +49,8 @@ const props = withDefaults(defineProps<PeerSelectorProps>(), {
 })
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string]
-  'change': [value: string]
+  'update:modelValue': [value: string | null]
+  'change': [value: string | null]
 }>()
 
 const selectedValue = ref(props.modelValue)

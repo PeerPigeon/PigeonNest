@@ -12,16 +12,18 @@
       
       <div
         class="upload-dropzone"
-        @click="openFileDialog"
         @dragover.prevent="isDragOver = true"
         @dragleave.prevent="isDragOver = false"
         @drop.prevent="handleDrop"
       >
         <div class="upload-icon">📁</div>
         <div class="upload-text">
-          <p class="primary">{{ primaryText }}</p>
-          <p class="secondary">{{ secondaryText }}</p>
+          <p class="primary">Drag and drop files here</p>
+          <p class="secondary">or click the button below</p>
         </div>
+        <button @click="openFileDialog" class="select-files-btn" type="button">
+          📂 Select Files
+        </button>
       </div>
     </div>
     
@@ -156,7 +158,6 @@ const formatFileSize = (bytes: number): string => {
   border-radius: 8px;
   padding: 32px;
   text-align: center;
-  cursor: pointer;
   transition: all 0.3s;
 }
 
@@ -181,7 +182,31 @@ const formatFileSize = (bytes: number): string => {
 .upload-text .secondary {
   font-size: 14px;
   color: #999;
-  margin: 0;
+  margin: 0 0 20px 0;
+}
+
+.select-files-btn {
+  padding: 12px 24px;
+  background: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.select-files-btn:hover {
+  background: #1565c0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.select-files-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
 .file-list {

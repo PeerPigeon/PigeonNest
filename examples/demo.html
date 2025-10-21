@@ -152,7 +152,7 @@
           <input 
             v-model="hubUrl" 
             type="text" 
-            placeholder="ws://localhost:3000"
+            placeholder="wss://pigeonhub.fly.dev"
           />
         </div>
         <div class="button-group">
@@ -206,6 +206,12 @@
       <!-- File Upload -->
       <div class="demo-section">
         <h2>Send Files</h2>
+        <peer-selector 
+          v-model="selectedPeer" 
+          :peers="connectedPeerIds" 
+          label="Select Peer" 
+          placeholder="Choose a peer to send files to..." 
+        />
         <div v-if="selectedPeer" style="margin-bottom: 12px; padding: 8px; background: #e3f2fd; border-radius: 4px; font-size: 13px;">
           📤 Sending to: <strong>{{ selectedPeer.substring(0, 8) }}...</strong>
         </div>
@@ -216,6 +222,18 @@
           :target-peer-id="selectedPeer"
           @upload="handleFileUpload"
           :multiple="true"
+        />
+      </div>
+      
+      <!-- Messaging -->
+      <div class="demo-section">
+        <h2>💬 Send Message</h2>
+        <message-input
+          v-model="messageText"
+          :target-peer="selectedPeer"
+          :disabled="!isConnected"
+          @send="handleSendMessage"
+          @clearTarget="selectedPeer = null"
         />
       </div>
     </div>
@@ -249,14 +267,16 @@
   </div>
 
   <script type="module">
-    import { createApp } from 'vue'
+    import { createApp, ref, computed } from 'vue/dist/vue.esm-bundler.js'
     import { 
       usePeerPigeon, 
       usePeerStreaming,
       PeerConnectionStatus,
       PeerList,
       FileUpload,
-      StreamProgress
+      StreamProgress,
+      MessageInput,
+      PeerSelector
     } from '../src/index.ts'
     
     const app = createApp({
@@ -264,13 +284,17 @@
         PeerConnectionStatus,
         PeerList,
         FileUpload,
-        StreamProgress
+        StreamProgress,
+        MessageInput,
+        PeerSelector
       },
       setup() {
-        const hubUrl = Vue.ref('ws://localhost:3000')
-        const selectedPeer = Vue.ref(null)
-        const messages = Vue.ref([])
+        const hubUrl = ref('wss://pigeonhub.fly.dev')
+        const selectedPeer = ref(null)
+        const messages = ref([])
         
+        const messageText = ref('')
+
         const {
           mesh,
           status,
@@ -322,8 +346,8 @@
                 addMessage(`❌ Peer disconnected: ${e.peerId.substring(0, 8)}...`)
               })
               
-              mesh.value.addEventListener('message', (e) => {
-                addMessage(`💬 Message from ${e.peerId.substring(0, 8)}...: ${e.data}`)
+              mesh.value.addEventListener('messageReceived', (e) => {
+                addMessage(`💬 Message from ${e.from.substring(0, 8)}...: ${e.content}`)
               })
               
               mesh.value.addEventListener('streamReceived', async (e) => {
@@ -379,6 +403,26 @@
             }
           }
         }
+
+        const handleSendMessage = async (message, targetPeer) => {
+          if (!mesh.value) {
+            addMessage('❌ Mesh not initialized')
+            return
+          }
+          
+          try {
+            if (targetPeer) {
+              await sendMessage(targetPeer, message)
+              addMessage(`📤 Sent to ${targetPeer.substring(0, 8)}...: ${message}`)
+            } else {
+              await broadcast(message)
+              addMessage(`📢 Broadcast: ${message}`)
+            }
+          } catch (err) {
+            addMessage(`❌ Failed to send message: ${err.message}`)
+          }
+        }
+
         
         const openMessageDialog = (peerId) => {
           const message = prompt('Enter message:')
@@ -403,7 +447,7 @@
           activeStreams.value = new Map(activeStreams.value)
         }
         
-        const activeStreamsArray = Vue.computed(() => 
+        const activeStreamsArray = computed(() => 
           Array.from(activeStreams.value.values())
         )
         
@@ -416,6 +460,7 @@
           hubUrl,
           selectedPeer,
           messages,
+          messageText,
           status,
           isConnected,
           isInitialized,
@@ -427,6 +472,7 @@
           disconnect,
           handleFileUpload,
           openMessageDialog,
+          handleSendMessage,
           openFileDialog,
           cancelStream,
           dismissStream,
