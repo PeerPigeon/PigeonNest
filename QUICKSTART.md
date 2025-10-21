@@ -274,7 +274,6 @@ const activeStreamsArray = computed(() =>
 
 3. **Navigate to:**
    - http://localhost:5173/examples/demo.html
-   - http://localhost:5173/examples/complete-demo.html
 
 4. **Open in multiple browser tabs** to test peer connections
 
@@ -283,8 +282,9 @@ const activeStreamsArray = computed(() =>
 ### Send Messages
 
 ```javascript
-await mesh.value.sendMessage(peerId, 'Hello!')
-await mesh.value.broadcast('Hello everyone!')
+// Use the composable's sendMessage and broadcast functions
+await sendMessage(peerId, 'Hello!')
+await broadcast('Hello everyone!')
 ```
 
 ### Listen for Events

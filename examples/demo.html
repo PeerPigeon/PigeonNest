@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>PigeonNest Demo - Vue 3 Framework for PeerPigeon</title>
+  <link rel="icon" type="image/jpeg" href="../pigeonlogo.jpg">
   <style>
     * {
       margin: 0;
@@ -134,11 +138,99 @@
       flex-direction: column;
       gap: 12px;
     }
+
+    .message-history {
+      margin-top: 16px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      background: #fafafa;
+      padding: 12px;
+    }
+
+    .message-history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .message-history-header h3 {
+      margin: 0;
+      font-size: 16px;
+      color: #333;
+    }
+
+    .history-count {
+      background: #e3f2fd;
+      color: #1976d2;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 10px;
+      background: #fff;
+    }
+
+    .history-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 6px;
+    }
+
+    .history-direction {
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .history-direction.sent {
+      color: #1976d2;
+    }
+
+    .history-direction.received {
+      color: #2e7d32;
+    }
+
+    .history-peer {
+      font-family: monospace;
+    }
+
+    .history-content {
+      font-size: 13px;
+      color: #333;
+      word-break: break-word;
+    }
+
+    .history-empty {
+      padding: 16px;
+      text-align: center;
+      font-size: 13px;
+      color: #999;
+      border: 1px dashed #e0e0e0;
+      border-radius: 4px;
+      background: #fff;
+    }
   </style>
 </head>
 <body>
   <div id="app">
-    <h1>🐦 PigeonNest Demo</h1>
+    <h1><img src="../pigeonlogo.jpg" alt="PigeonNest" style="width: 40px; height: 40px; vertical-align: middle; border-radius: 50%; margin-right: 12px;">PigeonNest Demo</h1>
     <p style="text-align: center; color: #666; margin-bottom: 30px;">
       Vue 3 Framework for PeerPigeon - WebRTC Mesh Networking with Streaming
     </p>
@@ -147,37 +239,15 @@
       <!-- Connection Control -->
       <div class="demo-section">
         <h2>Connection</h2>
-        <div class="control-group">
-          <label>Signaling Server URL</label>
-          <input 
-            v-model="hubUrl" 
-            type="text" 
-            placeholder="wss://pigeonhub.fly.dev"
-          />
-        </div>
-        <div class="button-group">
-          <button 
-            class="primary" 
-            @click="initialize" 
-            :disabled="isInitialized"
-          >
-            Initialize
-          </button>
-          <button 
-            class="primary" 
-            @click="connectToHub" 
-            :disabled="!isInitialized || isConnected"
-          >
-            Connect
-          </button>
-          <button 
-            class="secondary" 
-            @click="disconnect" 
-            :disabled="!isConnected"
-          >
-            Disconnect
-          </button>
-        </div>
+        <hub-connection
+          v-model:hub-url="hubUrl"
+          v-model:network-name="networkName"
+          :is-initialized="isInitialized"
+          :is-connected="isConnected"
+          @initialize="initialize"
+          @connect="connectToHub"
+          @disconnect="disconnect"
+        />
       </div>
       
       <!-- Status -->
@@ -197,43 +267,28 @@
         <peer-list 
           :peers="connectedPeerIds.map(id => ({ peerId: id, discoveredAt: Date.now() }))"
           @select="selectedPeer = $event"
-          @message="openMessageDialog"
-          @file="openFileDialog"
           :selected-peer-id="selectedPeer"
+          :show-message-action="false"
+          :show-file-action="false"
         />
       </div>
       
       <!-- File Upload -->
       <div class="demo-section">
-        <h2>Send Files</h2>
-        <peer-selector 
-          v-model="selectedPeer" 
-          :peers="connectedPeerIds" 
-          label="Select Peer" 
-          placeholder="Choose a peer to send files to..." 
-        />
-        <div v-if="selectedPeer" style="margin-bottom: 12px; padding: 8px; background: #e3f2fd; border-radius: 4px; font-size: 13px;">
-          📤 Sending to: <strong>{{ selectedPeer.substring(0, 8) }}...</strong>
-        </div>
-        <div v-else style="margin-bottom: 12px; padding: 8px; background: #fff3e0; border-radius: 4px; font-size: 13px;">
-          ⚠️ Select a peer first
-        </div>
-        <file-upload 
-          :target-peer-id="selectedPeer"
-          @upload="handleFileUpload"
-          :multiple="true"
+        <h2>📁 Send Files</h2>
+        <file-sender 
+          :peers="connectedPeerIds"
+          @send="handleFileSend"
         />
       </div>
       
       <!-- Messaging -->
       <div class="demo-section">
-        <h2>💬 Send Message</h2>
-        <message-input
-          v-model="messageText"
-          :target-peer="selectedPeer"
+        <chat-section
+          :messages="messageHistory"
+          :peers="connectedPeerIds"
           :disabled="!isConnected"
-          @send="handleSendMessage"
-          @clearTarget="selectedPeer = null"
+          @send="handleChatSend"
         />
       </div>
     </div>
@@ -241,42 +296,38 @@
     <!-- Active Streams -->
     <div v-if="activeStreamsArray.length > 0" class="demo-section">
       <h2>Active Transfers</h2>
-      <div class="streams-container">
-        <stream-progress 
-          v-for="stream in activeStreamsArray" 
-          :key="stream.streamId"
-          :stream="stream"
-          @cancel="cancelStream"
-          @dismiss="dismissStream"
-        />
-      </div>
+      <stream-container
+        :streams="activeStreamsArray"
+        @cancel="cancelStream"
+        @dismiss="dismissStream"
+        @download="downloadFile"
+      />
     </div>
     
     <!-- Message Log -->
     <div class="demo-section">
       <h2>Event Log</h2>
-      <div class="message-log">
-        <div v-for="(msg, index) in messages" :key="index" class="message-item">
-          <strong>[{{ formatTime(msg.timestamp) }}]</strong> {{ msg.text }}
-        </div>
-        <div v-if="messages.length === 0" style="color: #999; text-align: center; padding: 20px;">
-          No events yet
-        </div>
-      </div>
+      <event-log :messages="messages" />
     </div>
   </div>
 
   <script type="module">
-    import { createApp, ref, computed } from 'vue/dist/vue.esm-bundler.js'
+  import { createApp, ref, computed, onUnmounted } from 'vue/dist/vue.esm-bundler.js'
     import { 
       usePeerPigeon, 
       usePeerStreaming,
       PeerConnectionStatus,
       PeerList,
       FileUpload,
+      FileSender,
       StreamProgress,
+      StreamContainer,
       MessageInput,
-      PeerSelector
+      MessageHistory,
+      PeerSelector,
+      HubConnection,
+      EventLog,
+      ChatSection
     } from '../src/index.ts'
     
     const app = createApp({
@@ -284,14 +335,25 @@
         PeerConnectionStatus,
         PeerList,
         FileUpload,
+        FileSender,
         StreamProgress,
+        StreamContainer,
         MessageInput,
-        PeerSelector
+        MessageHistory,
+        PeerSelector,
+        HubConnection,
+        EventLog,
+        ChatSection
       },
       setup() {
         const hubUrl = ref('wss://pigeonhub.fly.dev')
+        const networkName = ref('pigeonnest-demo')
         const selectedPeer = ref(null)
+        const fileTargetPeer = ref('')
+        const selectedFilesSimple = ref([])
+        const fileInputRef = ref(null)
         const messages = ref([])
+        const messageHistory = ref([])
         
         const messageText = ref('')
 
@@ -306,16 +368,22 @@
           connect,
           disconnect: disconnectMesh,
           sendMessage,
-          broadcast
+          sendToMultiplePeers,
+          sendToTarget,
+          broadcast,
+          onMessage
         } = usePeerPigeon({
-          networkName: 'pigeonnest-demo',
+          networkName: networkName.value,
           maxPeers: 5,
-          minPeers: 1
+          minPeers: 1,
+          enableCrypto: true
         })
         
         const {
           activeStreams,
           sendFile,
+          sendFileToMultiplePeers,
+          sendFilesToTarget,
           sendBlob,
           receiveStream,
           cancelStream: cancelStreamComposable
@@ -330,11 +398,51 @@
             messages.value = messages.value.slice(0, 50)
           }
         }
+
+        let unsubscribeMessage = null
         
         const initialize = async () => {
           try {
             await init()
             addMessage('✅ Mesh initialized')
+
+            if (unsubscribeMessage) {
+              unsubscribeMessage()
+            }
+
+            unsubscribeMessage = onMessage((event) => {
+              console.log('🔍 Message event received:', event)
+              
+              const from = event.from || 'unknown'
+              
+              // Extract content properly - PeerPigeon wraps it in an object
+              let content = event.content
+              if (typeof content === 'object') {
+                // Check for encrypted message
+                if (content.encrypted && content.data) {
+                  content = content.data
+                } else if (content.message) {
+                  content = content.message
+                } else if (content.broadcast && content.data) {
+                  content = content.data
+                } else {
+                  content = JSON.stringify(content)
+                }
+              }
+              
+              const displayContent = typeof content === 'string' ? content : JSON.stringify(content)
+              
+              addMessage(`💬 Message from ${from.substring(0, 8)}...: ${displayContent}`)
+              messageHistory.value.unshift({
+                direction: 'received',
+                peerId: event.from,
+                content: displayContent,
+                timestamp: Date.now()
+              })
+              if (messageHistory.value.length > 20) {
+                messageHistory.value = messageHistory.value.slice(0, 20)
+              }
+            })
             
             // Set up event listeners
             if (mesh.value) {
@@ -346,23 +454,32 @@
                 addMessage(`❌ Peer disconnected: ${e.peerId.substring(0, 8)}...`)
               })
               
-              mesh.value.addEventListener('messageReceived', (e) => {
-                addMessage(`💬 Message from ${e.from.substring(0, 8)}...: ${e.content}`)
+              mesh.value.addEventListener('cryptoReady', () => {
+                addMessage('🔐 Encryption system ready')
+                console.log('🔐 Crypto system initialized')
+              })
+              
+              mesh.value.addEventListener('peerKeyAdded', (e) => {
+                addMessage(`🔐 Key exchange completed with ${e.peerId.substring(0, 8)}...`)
+                console.log('🔐 Key added for peer:', e.peerId)
+              })
+              
+              mesh.value.addEventListener('cryptoError', (e) => {
+                addMessage(`❌ Crypto error: ${e.error}`)
+                console.error('🔐 Crypto error:', e)
               })
               
               mesh.value.addEventListener('streamReceived', async (e) => {
                 addMessage(`📥 Receiving file: ${e.metadata.filename}`)
                 try {
                   const blob = await receiveStream(e)
-                  addMessage(`✅ File received: ${e.metadata.filename}`)
+                  addMessage(`✅ File received: ${e.metadata.filename} (${(blob.size / 1024).toFixed(2)} KB)`)
                   
-                  // Trigger download
-                  const url = URL.createObjectURL(blob)
-                  const a = document.createElement('a')
-                  a.href = url
-                  a.download = e.metadata.filename
-                  a.click()
-                  URL.revokeObjectURL(url)
+                  // Store the blob for download button
+                  const stream = activeStreams.value.get(e.streamId)
+                  if (stream) {
+                    stream.receivedBlob = blob
+                  }
                 } catch (err) {
                   addMessage(`❌ Error receiving file: ${err.message}`)
                 }
@@ -387,20 +504,36 @@
           addMessage('🔌 Disconnected')
         }
         
-        const handleFileUpload = async (files) => {
-          if (!selectedPeer.value) {
-            addMessage('❌ No peer selected')
+        const handleFileUpload = async (files, targetPeerId) => {
+          const target = targetPeerId !== undefined ? targetPeerId : selectedPeer.value
+          
+          // Check if target is empty string (placeholder) - treat as no selection
+          if (target === '' || target === undefined) {
+            addMessage('❌ No target selected')
             return
           }
           
-          for (const file of files) {
-            try {
-              addMessage(`📤 Sending ${file.name} to ${selectedPeer.value.substring(0, 8)}...`)
-              await sendFile(mesh.value, selectedPeer.value, file)
-              addMessage(`✅ Sent ${file.name}`)
-            } catch (err) {
-              addMessage(`❌ Failed to send ${file.name}: ${err.message}`)
+          try {
+            if (target === null) {
+              // Broadcast to all peers
+              addMessage(`📢 Broadcasting ${files.length} file(s) to all peers...`)
+              await sendFilesToTarget(mesh.value, connectedPeerIds.value, files)
+              addMessage(`✅ Broadcast complete`)
+            } else if (Array.isArray(target)) {
+              // Send to multiple peers
+              addMessage(`📤 Sending ${files.length} file(s) to ${target.length} peers...`)
+              await sendFilesToTarget(mesh.value, target, files)
+              addMessage(`✅ Sent to ${target.length} peers`)
+            } else {
+              // Send to single peer
+              for (const file of files) {
+                addMessage(`📤 Sending ${file.name} to ${target.substring(0, 8)}...`)
+                await sendFile(mesh.value, target, file)
+                addMessage(`✅ Sent ${file.name}`)
+              }
             }
+          } catch (err) {
+            addMessage(`❌ Failed to send: ${err.message}`)
           }
         }
 
@@ -411,32 +544,206 @@
           }
           
           try {
-            if (targetPeer) {
-              await sendMessage(targetPeer, message)
-              addMessage(`📤 Sent to ${targetPeer.substring(0, 8)}...: ${message}`)
-            } else {
+            if (targetPeer === null) {
+              // Broadcast
               await broadcast(message)
               addMessage(`📢 Broadcast: ${message}`)
+              messageHistory.value.unshift({
+                direction: 'sent',
+                peerId: 'broadcast',
+                content: message,
+                timestamp: Date.now()
+              })
+            } else if (Array.isArray(targetPeer)) {
+              // Multiple peers
+              await sendToMultiplePeers(targetPeer, message)
+              addMessage(`📤 Sent to ${targetPeer.length} peers: ${message}`)
+              for (const peerId of targetPeer) {
+                messageHistory.value.unshift({
+                  direction: 'sent',
+                  peerId: peerId,
+                  content: message,
+                  timestamp: Date.now()
+                })
+              }
+            } else {
+              // Single peer
+              await sendMessage(targetPeer, message)
+              addMessage(`� Sent to ${targetPeer.substring(0, 8)}...: ${message}`)
+              messageHistory.value.unshift({
+                direction: 'sent',
+                peerId: targetPeer,
+                content: message,
+                timestamp: Date.now()
+              })
+            }
+            if (messageHistory.value.length > 20) {
+              messageHistory.value = messageHistory.value.slice(0, 20)
             }
           } catch (err) {
             addMessage(`❌ Failed to send message: ${err.message}`)
           }
         }
 
-        
-        const openMessageDialog = (peerId) => {
-          const message = prompt('Enter message:')
-          if (message && mesh.value) {
-            sendMessage(peerId, message)
-            addMessage(`💬 Sent message to ${peerId.substring(0, 8)}...`)
+        const handleChatSend = async (message, target) => {
+          if (!mesh.value) {
+            addMessage('❌ Mesh not initialized')
+            return
+          }
+          
+          try {
+            if (target === null) {
+              // Broadcast
+              await broadcast(message)
+              addMessage(`📢 Broadcast: ${message}`)
+              messageHistory.value.unshift({
+                direction: 'sent',
+                peerId: 'broadcast',
+                content: message,
+                timestamp: Date.now()
+              })
+            } else {
+              // Single peer
+              await sendMessage(target, message)
+              addMessage(`📤 Sent to ${target.substring(0, 8)}...: ${message}`)
+              messageHistory.value.unshift({
+                direction: 'sent',
+                peerId: target,
+                content: message,
+                timestamp: Date.now()
+              })
+            }
+            if (messageHistory.value.length > 50) {
+              messageHistory.value = messageHistory.value.slice(0, 50)
+            }
+          } catch (err) {
+            addMessage(`❌ Failed to send message: ${err.message}`)
           }
         }
-        
-        const openFileDialog = (peerId) => {
-          selectedPeer.value = peerId
-          addMessage(`📁 Selected peer for file transfer: ${peerId.substring(0, 8)}...`)
+
+        const handleFileSend = async (files, target) => {
+          if (!mesh.value) {
+            addMessage('❌ Mesh not initialized')
+            return
+          }
+
+          try {
+            if (target === null) {
+              // Broadcast to all peers
+              addMessage(`📢 Broadcasting ${files.length} file(s) to all peers...`)
+              for (const file of files) {
+                for (const peerId of connectedPeerIds.value) {
+                  await sendFile(mesh.value, peerId, file)
+                }
+              }
+              addMessage(`✅ Broadcast complete`)
+            } else {
+              // Send to single peer
+              for (const file of files) {
+                addMessage(`📤 Sending ${file.name} to ${target.substring(0, 8)}...`)
+                await sendFile(mesh.value, target, file)
+                addMessage(`✅ Sent ${file.name}`)
+              }
+            }
+          } catch (err) {
+            addMessage(`❌ Failed to send: ${err.message}`)
+          }
         }
-        
+
+        const handleFileSelectSimple = (event) => {
+          const files = Array.from(event.target.files || [])
+          selectedFilesSimple.value.push(...files)
+        }
+
+        const removeFileSimple = (index) => {
+          selectedFilesSimple.value.splice(index, 1)
+        }
+
+        const clearFilesSimple = () => {
+          selectedFilesSimple.value = []
+          if (fileInputRef.value) {
+            fileInputRef.value.value = ''
+          }
+        }
+
+        const formatFileSizeSimple = (bytes) => {
+          if (bytes === 0) return '0 B'
+          const k = 1024
+          const sizes = ['B', 'KB', 'MB', 'GB']
+          const i = Math.floor(Math.log(bytes) / Math.log(k))
+          return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`
+        }
+
+        const uploadFilesSimple = async () => {
+          if (!fileTargetPeer.value || fileTargetPeer.value === '') {
+            addMessage('❌ No target selected')
+            return
+          }
+
+          try {
+            if (fileTargetPeer.value === '__broadcast__') {
+              // Broadcast to all peers
+              addMessage(`📢 Broadcasting ${selectedFilesSimple.value.length} file(s) to all peers...`)
+              for (const file of selectedFilesSimple.value) {
+                for (const peerId of connectedPeerIds.value) {
+                  await sendFile(mesh.value, peerId, file)
+                }
+              }
+              addMessage(`✅ Broadcast complete`)
+            } else {
+              // Send to single peer
+              for (const file of selectedFilesSimple.value) {
+                addMessage(`📤 Sending ${file.name} to ${fileTargetPeer.value.substring(0, 8)}...`)
+                await sendFile(mesh.value, fileTargetPeer.value, file)
+                addMessage(`✅ Sent ${file.name}`)
+              }
+            }
+            clearFilesSimple()
+          } catch (err) {
+            addMessage(`❌ Failed to send: ${err.message}`)
+          }
+        }
+
+        const uploadFilesComponent = async (files, targetPeerId) => {
+          const target = targetPeerId !== undefined ? targetPeerId : fileTargetPeer.value
+          
+          if (!target || target === '') {
+            addMessage('❌ No target selected')
+            return
+          }
+
+          try {
+            if (target === null) {
+              // Broadcast to all peers
+              addMessage(`📢 Broadcasting ${files.length} file(s) to all peers...`)
+              for (const file of files) {
+                for (const peerId of connectedPeerIds.value) {
+                  await sendFile(mesh.value, peerId, file)
+                }
+              }
+              addMessage(`✅ Broadcast complete`)
+            } else if (Array.isArray(target)) {
+              // Multiple peers
+              addMessage(`📤 Sending ${files.length} file(s) to ${target.length} peers...`)
+              for (const file of files) {
+                for (const peerId of target) {
+                  await sendFile(mesh.value, peerId, file)
+                }
+              }
+              addMessage(`✅ Sent to ${target.length} peers`)
+            } else {
+              // Single peer
+              for (const file of files) {
+                addMessage(`📤 Sending ${file.name} to ${target.substring(0, 8)}...`)
+                await sendFile(mesh.value, target, file)
+                addMessage(`✅ Sent ${file.name}`)
+              }
+            }
+          } catch (err) {
+            addMessage(`❌ Failed to send: ${err.message}`)
+          }
+        }
+
         const cancelStream = (streamId) => {
           cancelStreamComposable(streamId)
           addMessage(`🚫 Cancelled stream: ${streamId}`)
@@ -447,6 +754,23 @@
           activeStreams.value = new Map(activeStreams.value)
         }
         
+        const downloadFile = (streamOrId) => {
+          // Handle both stream object and streamId string for backward compatibility
+          const stream = typeof streamOrId === 'string' 
+            ? activeStreams.value.get(streamOrId)
+            : streamOrId
+          
+          if (stream && stream.receivedBlob) {
+            const url = URL.createObjectURL(stream.receivedBlob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = stream.metadata?.filename || stream.filename || 'download'
+            a.click()
+            URL.revokeObjectURL(url)
+            addMessage(`💾 Downloaded: ${stream.metadata?.filename || stream.filename}`)
+          }
+        }
+        
         const activeStreamsArray = computed(() => 
           Array.from(activeStreams.value.values())
         )
@@ -455,11 +779,29 @@
           const date = new Date(timestamp)
           return date.toLocaleTimeString()
         }
+
+        const formatPeerId = (peerId) => {
+          if (!peerId) return 'unknown'
+          if (peerId.length <= 16) return peerId
+          return `${peerId.substring(0, 8)}...${peerId.substring(peerId.length - 4)}`
+        }
+        
+        onUnmounted(() => {
+          if (unsubscribeMessage) {
+            unsubscribeMessage()
+            unsubscribeMessage = null
+          }
+        })
         
         return {
           hubUrl,
+          networkName,
           selectedPeer,
+          fileTargetPeer,
+          selectedFilesSimple,
+          fileInputRef,
           messages,
+          messageHistory,
           messageText,
           status,
           isConnected,
@@ -471,12 +813,20 @@
           connectToHub,
           disconnect,
           handleFileUpload,
-          openMessageDialog,
+          handleFileSend,
+          handleFileSelectSimple,
+          removeFileSimple,
+          clearFilesSimple,
+          formatFileSizeSimple,
+          uploadFilesSimple,
+          uploadFilesComponent,
           handleSendMessage,
-          openFileDialog,
+          handleChatSend,
           cancelStream,
           dismissStream,
-          formatTime
+          downloadFile,
+          formatTime,
+          formatPeerId
         }
       }
     })

@@ -32,6 +32,14 @@ export interface PeerInfo {
   discoveredAt: number
 }
 
+export interface MeshMessageEvent {
+  from: string
+  to?: string
+  content: any
+  timestamp?: number
+  [key: string]: unknown
+}
+
 export interface StreamMetadata {
   filename: string
   mimeType: string

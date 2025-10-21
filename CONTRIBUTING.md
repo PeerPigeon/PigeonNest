@@ -52,8 +52,7 @@ PigeonNest/
 │   │   └── index.ts
 │   └── index.ts          # Main entry point
 ├── examples/             # Example applications
-│   ├── demo.html
-│   └── complete-demo.html
+│   └── demo.html
 ├── dist/                 # Build output (generated)
 ├── package.json
 ├── vite.config.ts

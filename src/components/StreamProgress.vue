@@ -30,21 +30,28 @@
       
       <div class="stream-actions">
         <button 
-          v-if="stream.status === 'active' && onCancel"
+          v-if="stream.status === 'active' && showCancel"
           @click="$emit('cancel', stream.streamId)"
           class="cancel-btn"
         >
           Cancel
         </button>
         <button 
-          v-if="stream.status === 'error' && onRetry"
+          v-if="stream.status === 'completed' && stream.receivedBlob && showDownload"
+          @click="$emit('download', stream.streamId)"
+          class="download-btn"
+        >
+          💾 Download
+        </button>
+        <button 
+          v-if="stream.status === 'error' && showRetry"
           @click="$emit('retry', stream.streamId)"
           class="retry-btn"
         >
           Retry
         </button>
         <button 
-          v-if="stream.status === 'completed' && onDismiss"
+          v-if="stream.status === 'completed' && showDismiss"
           @click="$emit('dismiss', stream.streamId)"
           class="dismiss-btn"
         >
@@ -65,21 +72,24 @@ import type { StreamProgress } from '../composables/usePeerStreaming'
 
 interface StreamProgressProps {
   stream: StreamProgress
-  onCancel?: boolean
-  onRetry?: boolean
-  onDismiss?: boolean
+  showCancel?: boolean
+  showRetry?: boolean
+  showDismiss?: boolean
+  showDownload?: boolean
 }
 
 const props = withDefaults(defineProps<StreamProgressProps>(), {
-  onCancel: true,
-  onRetry: true,
-  onDismiss: true
+  showCancel: true,
+  showRetry: true,
+  showDismiss: true,
+  showDownload: true
 })
 
 defineEmits<{
   cancel: [streamId: string]
   retry: [streamId: string]
   dismiss: [streamId: string]
+  download: [streamId: string]
 }>()
 
 const statusText = computed(() => {
@@ -89,7 +99,7 @@ const statusText = computed(() => {
     case 'active':
       return 'Transferring'
     case 'completed':
-      return 'Completed'
+      return props.stream.direction === 'send' ? 'Sent' : 'Received'
     case 'error':
       return 'Error'
     case 'cancelled':
@@ -234,7 +244,8 @@ const formatFileSize = (bytes: number): string => {
 
 .cancel-btn,
 .retry-btn,
-.dismiss-btn {
+.dismiss-btn,
+.download-btn {
   padding: 6px 12px;
   border: 1px solid #e0e0e0;
   border-radius: 4px;
@@ -242,6 +253,18 @@ const formatFileSize = (bytes: number): string => {
   cursor: pointer;
   transition: all 0.2s;
   background: white;
+}
+
+.download-btn {
+  background: #4caf50;
+  color: white;
+  border-color: #4caf50;
+  font-weight: 600;
+}
+
+.download-btn:hover {
+  background: #45a049;
+  border-color: #45a049;
 }
 
 .cancel-btn:hover {

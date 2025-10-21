@@ -1,285 +1,93 @@
 <template>
-  <div class="message-input">
-    <div class="message-header">
-      <label class="input-label">{{ label }}</label>
-      <div v-if="targetPeer" class="target-info">
-        <span class="target-label">To:</span>
-        <span class="target-peer">{{ truncatePeerId(targetPeer) }}</span>
-        <button @click="clearTarget" class="clear-btn" type="button" title="Clear target">✕</button>
-      </div>
-      <div v-else class="broadcast-info">
-        📢 Broadcast to all peers
-      </div>
-    </div>
-    
-    <div class="input-group">
-      <textarea
-        v-model="localMessage"
-        :placeholder="placeholder"
-        :rows="rows"
-        :maxlength="maxLength"
-        class="message-field"
-        @keydown.enter.meta="handleSend"
-        @keydown.enter.ctrl="handleSend"
-        @input="handleInput"
-      />
-    </div>
-    
-    <div class="message-footer">
-      <div v-if="showCharacterCount" class="character-count">
-        {{ localMessage.length }} / {{ maxLength }}
-      </div>
-      <div class="button-group">
-        <button
-          v-if="showClearButton"
-          @click="handleClear"
-          type="button"
-          class="secondary-btn"
-          :disabled="!localMessage"
-        >
-          Clear
-        </button>
-        <button
-          @click="handleSend"
-          type="button"
-          class="primary-btn"
-          :disabled="!localMessage || disabled"
-        >
-          {{ targetPeer ? '📤 Send' : '📢 Broadcast' }}
-        </button>
-      </div>
-    </div>
-    
-    <div v-if="helpText" class="help-text">{{ helpText }}</div>
+  <div class="message-input-wrapper">
+    <textarea
+      :value="message"
+      @input="message = ($event.target as HTMLTextAreaElement).value"
+      placeholder="Type your message here..."
+      rows="4"
+      class="input-textarea"
+    ></textarea>
+    <button
+      @click="sendMessage"
+      class="send-btn"
+      type="button"
+      :disabled="!message.trim() || disabled"
+    >
+      📤 Send Message
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 
-interface MessageInputProps {
-  modelValue?: string
-  targetPeer?: string | null
-  label?: string
-  placeholder?: string
-  rows?: number
-  maxLength?: number
-  showCharacterCount?: boolean
-  showClearButton?: boolean
+defineProps<{
   disabled?: boolean
-  helpText?: string
-}
-
-const props = withDefaults(defineProps<MessageInputProps>(), {
-  modelValue: '',
-  targetPeer: null,
-  label: 'Message',
-  placeholder: 'Type your message... (Cmd/Ctrl + Enter to send)',
-  rows: 3,
-  maxLength: 1000,
-  showCharacterCount: true,
-  showClearButton: true,
-  disabled: false,
-  helpText: ''
-})
-
-const emit = defineEmits<{
-  'update:modelValue': [value: string]
-  'send': [message: string, targetPeer: string | null]
-  'clear': []
-  'clearTarget': []
 }>()
 
-const localMessage = ref(props.modelValue)
+const emit = defineEmits<{
+  send: [message: string]
+}>()
 
-const truncatePeerId = (peerId: string): string => {
-  if (peerId.length <= 16) return peerId
-  return `${peerId.substring(0, 8)}...${peerId.substring(peerId.length - 8)}`
-}
+const message = ref('')
 
-const handleInput = () => {
-  emit('update:modelValue', localMessage.value)
-}
-
-const handleSend = (event?: KeyboardEvent) => {
-  if (event) {
-    event.preventDefault()
-  }
-  if (localMessage.value && !props.disabled) {
-    emit('send', localMessage.value, props.targetPeer)
-    localMessage.value = ''
-    emit('update:modelValue', '')
+const sendMessage = () => {
+  const text = message.value.trim()
+  if (text && !false) {
+    emit('send', text)
+    message.value = ''
   }
 }
-
-const handleClear = () => {
-  localMessage.value = ''
-  emit('update:modelValue', '')
-  emit('clear')
-}
-
-const clearTarget = () => {
-  emit('clearTarget')
-}
-
-watch(() => props.modelValue, (newValue) => {
-  localMessage.value = newValue
-})
 </script>
 
 <style scoped>
-.message-input {
+.message-input-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-
-.message-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   gap: 12px;
+  padding: 20px;
+  background: #f8f9fa;
+  border: 3px solid #1976d2;
+  border-radius: 8px;
+  margin-top: 20px;
+  position: relative;
+  z-index: 100;
 }
 
-.input-label {
-  font-weight: 600;
-  color: #333;
-  font-size: 14px;
-}
-
-.target-info {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  background: #e3f2fd;
-  border-radius: 4px;
-  font-size: 13px;
-}
-
-.target-label {
-  color: #666;
-  font-weight: 500;
-}
-
-.target-peer {
-  color: #1976d2;
-  font-weight: 600;
-  font-family: monospace;
-}
-
-.clear-btn {
-  padding: 2px 6px;
-  background: #fff;
-  border: 1px solid #ccc;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 12px;
-  color: #666;
-  transition: all 0.2s;
-}
-
-.clear-btn:hover {
-  background: #f5f5f5;
-  color: #333;
-}
-
-.broadcast-info {
-  padding: 4px 10px;
-  background: #fff3e0;
-  border-radius: 4px;
-  font-size: 13px;
-  color: #f57c00;
-  font-weight: 500;
-}
-
-.input-group {
+.input-textarea {
   width: 100%;
-}
-
-.message-field {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: 12px;
+  border: 2px solid #1976d2;
+  border-radius: 4px;
+  font-size: 16px;
   font-family: inherit;
   resize: vertical;
-  transition: border-color 0.2s;
+  box-sizing: border-box;
 }
 
-.message-field:focus {
+.input-textarea:focus {
   outline: none;
-  border-color: #1976d2;
+  border-color: #0d47a1;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.3);
 }
 
-.message-field:disabled {
-  background: #f5f5f5;
-  cursor: not-allowed;
-}
-
-.message-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-.character-count {
-  font-size: 12px;
-  color: #999;
-}
-
-.button-group {
-  display: flex;
-  gap: 8px;
-}
-
-.primary-btn,
-.secondary-btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.primary-btn {
+.send-btn {
+  padding: 12px 24px;
   background: #1976d2;
   color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
 }
 
-.primary-btn:hover:not(:disabled) {
+.send-btn:hover:not(:disabled) {
   background: #1565c0;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(25, 118, 210, 0.3);
 }
 
-.primary-btn:disabled {
+.send-btn:disabled {
   background: #ccc;
   cursor: not-allowed;
-}
-
-.secondary-btn {
-  background: #f5f5f5;
-  color: #333;
-  border: 1px solid #e0e0e0;
-}
-
-.secondary-btn:hover:not(:disabled) {
-  background: #e0e0e0;
-}
-
-.secondary-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.help-text {
-  font-size: 12px;
-  color: #666;
-  margin-top: 4px;
 }
 </style>

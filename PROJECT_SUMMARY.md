@@ -103,8 +103,7 @@ PigeonNest/
 │   ├── types/           # TypeScript definitions
 │   └── index.ts         # Main exports
 ├── examples/            # Demo applications
-│   ├── demo.html
-│   └── complete-demo.html
+│   └── demo.html
 └── dist/               # Build output
     ├── pigeon-nest.es.js
     ├── pigeon-nest.umd.js
@@ -119,19 +118,15 @@ PigeonNest/
 - **CHANGELOG.md** - Version history and changes
 - **index.html** - Landing page with feature overview
 
-### 🎨 Example Applications
+### 🎨 Example Application
 
-1. **demo.html** - Basic demonstration
-   - Connection management
-   - Peer listing
-   - File transfer
-   - Message log
-
-2. **complete-demo.html** - Full-featured application
-   - Tabbed interface (Files, Storage, Messages)
-   - Complete configuration options
-   - All components demonstrated
-   - Real-world usage patterns
+**demo.html** - Full-featured demonstration
+- Connection management with HubConnection component
+- Peer listing with PeerList component
+- File transfer with FileSender and StreamProgress components
+- Complete chat section with ChatSection component
+- Event logging with EventLog component
+- Real-world usage patterns with all components
 
 ### 🔒 Security
 
