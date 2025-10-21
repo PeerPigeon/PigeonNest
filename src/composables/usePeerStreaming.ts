@@ -23,6 +23,7 @@ export interface StreamProgress {
   bytesTransferred: number
   progress: number
   status: 'pending' | 'active' | 'completed' | 'error' | 'cancelled'
+  direction: 'send' | 'receive'
   error?: Error
   receivedBlob?: Blob
   metadata?: StreamMetadata
@@ -54,7 +55,8 @@ export function usePeerStreaming(): UsePeerStreamingReturn {
       totalSize: file.size,
       bytesTransferred: 0,
       progress: 0,
-      status: 'pending'
+      status: 'pending',
+      direction: 'send'
     })
     // Trigger reactivity
     activeStreams.value = new Map(activeStreams.value)
@@ -114,7 +116,8 @@ export function usePeerStreaming(): UsePeerStreamingReturn {
       totalSize,
       bytesTransferred: 0,
       progress: 0,
-      status: 'pending'
+      status: 'pending',
+      direction: 'send'
     })
     // Trigger reactivity
     activeStreams.value = new Map(activeStreams.value)
@@ -168,6 +171,7 @@ export function usePeerStreaming(): UsePeerStreamingReturn {
       bytesTransferred: 0,
       progress: 0,
       status: 'active',
+      direction: 'receive',
       metadata
     }
 
@@ -280,7 +284,8 @@ export function usePeerStreaming(): UsePeerStreamingReturn {
       totalSize,
       bytesTransferred: 0,
       progress: 0,
-      status: 'pending'
+      status: 'pending',
+      direction: 'send'
     })
     // Trigger reactivity
     activeStreams.value = new Map(activeStreams.value)
