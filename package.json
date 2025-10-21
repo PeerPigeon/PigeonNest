@@ -1,6 +1,6 @@
 {
   "name": "pigeonnest",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A Vue 3 framework for PeerPigeon application development",
   "type": "module",
   "main": "./dist/pigeon-nest.umd.js",
