@@ -29,6 +29,8 @@ PigeonNest provides Vue 3 composables and components that make it easy to build 
 - **PeerList** - List and manage connected peers
 - **FileUpload** - Drag-and-drop file upload with multi-file support
 - **StreamProgress** - Real-time progress tracking for file transfers
+- **MediaStreamPlayer** - Cross-browser media player for streamed video/audio
+- **ProgressiveMediaPlayer** - Advanced player with chunked/progressive streaming support
 
 ## Installation
 
@@ -183,6 +185,69 @@ const sendWithManualControl = async (peerId) => {
 }
 </script>
 ```
+
+### Media Streaming 🎥
+
+Stream video and audio files between peers with cross-browser compatible media players:
+
+```vue
+<template>
+  <div>
+    <!-- Simple media player for complete files -->
+    <MediaStreamPlayer
+      v-if="receivedBlob"
+      :blob="receivedBlob"
+      :mimeType="mimeType"
+      :controls="true"
+      :autoplay="true"
+    />
+
+    <!-- Progressive player for large files/streaming -->
+    <ProgressiveMediaPlayer
+      ref="progressivePlayer"
+      :mimeType="'video/mp4'"
+      :expectedSize="fileSize"
+      :controls="true"
+    />
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import { usePeerPigeon, usePeerStreaming } from 'pigeonnest'
+import { MediaStreamPlayer, ProgressiveMediaPlayer } from 'pigeonnest'
+
+const { mesh } = usePeerPigeon()
+const { receiveStream } = usePeerStreaming()
+
+const receivedBlob = ref(null)
+const mimeType = ref('')
+const progressivePlayer = ref()
+
+// Listen for incoming media streams
+if (mesh.value) {
+  mesh.value.addEventListener('streamIncoming', async (event) => {
+    // For complete files
+    const blob = await receiveStream(event)
+    receivedBlob.value = blob
+    mimeType.value = event.metadata.mimeType
+    
+    // Or for progressive streaming
+    const reader = event.stream.getReader()
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      progressivePlayer.value.addChunk(value)
+    }
+    progressivePlayer.value.finalizeStream()
+  })
+}
+</script>
+```
+
+**✅ Works in:** Chrome, Firefox, Safari, Edge, Brave
+
+See [Media Streaming Guide](./docs/MEDIA_STREAMING.md) for detailed documentation.
 
 ### Distributed Storage
 

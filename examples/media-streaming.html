@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PigeonNest Media Streaming Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2.5rem;
+    }
+
+    .demo-section {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .demo-section h2 {
+      color: #333;
+      margin-bottom: 16px;
+      font-size: 1.5rem;
+    }
+
+    .demo-section p {
+      color: #666;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .file-input {
+      padding: 10px;
+      border: 2px dashed #667eea;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #f8f9ff;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .status {
+      padding: 12px;
+      background: #f0f0f0;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+
+    .status.connected {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .peer-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .info-card {
+      background: #f8f9ff;
+      padding: 12px;
+      border-radius: 6px;
+      border-left: 4px solid #667eea;
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .info-value {
+      font-size: 14px;
+      color: #333;
+      font-weight: 500;
+      word-break: break-all;
+    }
+
+    .media-container {
+      margin-top: 20px;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .footer {
+      text-align: center;
+      color: white;
+      margin-top: 40px;
+      padding: 20px;
+    }
+
+    .footer a {
+      color: white;
+      text-decoration: underline;
+    }
+
+    code {
+      background: #f4f4f4;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🕊️ PigeonNest Media Streaming Demo</h1>
+
+    <!-- Connection Section -->
+    <div class="demo-section">
+      <h2>1. Connect to Network</h2>
+      <p>First, connect to a peer network. Each peer needs a unique ID.</p>
+      
+      <div id="connectionStatus" class="status">
+        Disconnected
+      </div>
+
+      <div class="peer-info">
+        <div class="info-card">
+          <div class="info-label">Your Peer ID</div>
+          <div class="info-value" id="localPeerId">-</div>
+        </div>
+        <div class="info-card">
+          <div class="info-label">Network Name</div>
+          <div class="info-value" id="networkName">-</div>
+        </div>
+        <div class="info-card">
+          <div class="info-label">Connected Peers</div>
+          <div class="info-value" id="connectedPeers">0</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <input type="text" id="peerIdInput" placeholder="Your Peer ID (optional)" style="flex: 1; min-width: 200px; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+        <input type="text" id="networkInput" placeholder="Network Name" value="media-demo" style="flex: 1; min-width: 200px; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+        <button id="connectBtn" class="btn">Connect</button>
+        <button id="disconnectBtn" class="btn" disabled>Disconnect</button>
+      </div>
+    </div>
+
+    <!-- Send Media Section -->
+    <div class="demo-section">
+      <h2>2. Send Media File</h2>
+      <p>Select a video or audio file to stream to another peer. Supports MP4, WebM, MP3, WAV, etc.</p>
+      
+      <div class="controls">
+        <input type="file" id="mediaFileInput" class="file-input" accept="video/*,audio/*" disabled>
+        <input type="text" id="targetPeerInput" placeholder="Target Peer ID" style="flex: 1; min-width: 200px; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" disabled>
+        <button id="sendBtn" class="btn" disabled>Send Media</button>
+      </div>
+
+      <div id="sendProgress"></div>
+    </div>
+
+    <!-- Receive Media Section -->
+    <div class="demo-section">
+      <h2>3. Receive & Play Media</h2>
+      <p>When a peer sends you a media file, it will appear here and start playing automatically.</p>
+      
+      <div id="receiveStatus" class="status">
+        Waiting for media...
+      </div>
+
+      <div class="media-container" id="mediaContainer" style="display: none;">
+        <!-- Media player will be inserted here -->
+      </div>
+    </div>
+
+    <!-- Instructions Section -->
+    <div class="demo-section">
+      <h2>📖 How to Use</h2>
+      <ol style="color: #666; line-height: 2; padding-left: 20px;">
+        <li>Open this page in <strong>two different browser windows</strong> (can be same or different browsers)</li>
+        <li>Enter different Peer IDs for each window (e.g., "peer1" and "peer2")</li>
+        <li>Use the same <strong>Network Name</strong> in both windows (default: "media-demo")</li>
+        <li>Click <strong>Connect</strong> in both windows</li>
+        <li>Wait until both peers show "Connected: 1" in the Connected Peers field</li>
+        <li>In one window, select a media file and enter the other peer's ID</li>
+        <li>Click <strong>Send Media</strong> and watch it stream to the other peer!</li>
+      </ol>
+
+      <h3 style="margin-top: 24px; color: #333;">✅ Browser Compatibility</h3>
+      <p>This demo works on:</p>
+      <ul style="color: #666; line-height: 2; padding-left: 20px;">
+        <li>✅ Chrome / Chromium</li>
+        <li>✅ Firefox</li>
+        <li>✅ Safari</li>
+        <li>✅ Edge</li>
+        <li>✅ Brave</li>
+      </ul>
+    </div>
+
+    <div class="footer">
+      <p>Built with PigeonNest 🕊️</p>
+      <p><a href="https://github.com/PeerPigeon/PigeonNest">View on GitHub</a></p>
+    </div>
+  </div>
+
+  <script type="module">
+    // This is a standalone demo - in production, import from your build
+    import { PeerPigeonMesh } from 'https://cdn.jsdelivr.net/npm/peerpigeon@latest/dist/peerpigeon.js'
+
+    let mesh = null
+    let currentMediaBlob = null
+
+    // DOM elements
+    const connectBtn = document.getElementById('connectBtn')
+    const disconnectBtn = document.getElementById('disconnectBtn')
+    const peerIdInput = document.getElementById('peerIdInput')
+    const networkInput = document.getElementById('networkInput')
+    const connectionStatus = document.getElementById('connectionStatus')
+    const localPeerId = document.getElementById('localPeerId')
+    const networkName = document.getElementById('networkName')
+    const connectedPeers = document.getElementById('connectedPeers')
+    const mediaFileInput = document.getElementById('mediaFileInput')
+    const targetPeerInput = document.getElementById('targetPeerInput')
+    const sendBtn = document.getElementById('sendBtn')
+    const sendProgress = document.getElementById('sendProgress')
+    const receiveStatus = document.getElementById('receiveStatus')
+    const mediaContainer = document.getElementById('mediaContainer')
+
+    // Update UI status
+    function updateStatus(message, type = 'info') {
+      connectionStatus.textContent = message
+      connectionStatus.className = 'status ' + type
+    }
+
+    function updateReceiveStatus(message, type = 'info') {
+      receiveStatus.textContent = message
+      receiveStatus.className = 'status ' + type
+    }
+
+    // Connect to network
+    connectBtn.addEventListener('click', async () => {
+      const peerId = peerIdInput.value.trim() || undefined
+      const network = networkInput.value.trim() || 'media-demo'
+
+      try {
+        updateStatus('Connecting...', 'info')
+        
+        mesh = new PeerPigeonMesh({
+          peerId: peerId,
+          networkName: network,
+          autoConnect: true,
+          autoDiscovery: true
+        })
+
+        // Setup event listeners
+        mesh.addEventListener('peerConnected', (event) => {
+          console.log('Peer connected:', event.peerId)
+          updateConnectedPeers()
+        })
+
+        mesh.addEventListener('peerDisconnected', (event) => {
+          console.log('Peer disconnected:', event.peerId)
+          updateConnectedPeers()
+        })
+
+        mesh.addEventListener('streamIncoming', async (event) => {
+          console.log('Incoming stream:', event)
+          handleIncomingStream(event)
+        })
+
+        await mesh.connect()
+
+        // Update UI
+        updateStatus('Connected!', 'connected')
+        localPeerId.textContent = mesh.peerId
+        networkName.textContent = network
+        updateConnectedPeers()
+
+        // Enable controls
+        connectBtn.disabled = true
+        disconnectBtn.disabled = false
+        peerIdInput.disabled = true
+        networkInput.disabled = true
+        mediaFileInput.disabled = false
+        targetPeerInput.disabled = false
+        updateSendButtonState()
+
+      } catch (error) {
+        console.error('Connection error:', error)
+        updateStatus('Connection failed: ' + error.message, 'error')
+      }
+    })
+
+    // Disconnect
+    disconnectBtn.addEventListener('click', async () => {
+      if (mesh) {
+        await mesh.disconnect()
+        mesh = null
+      }
+
+      updateStatus('Disconnected', 'info')
+      connectBtn.disabled = false
+      disconnectBtn.disabled = true
+      peerIdInput.disabled = false
+      networkInput.disabled = false
+      mediaFileInput.disabled = true
+      targetPeerInput.disabled = true
+      sendBtn.disabled = true
+      connectedPeers.textContent = '0'
+    })
+
+    // Update connected peers count
+    function updateConnectedPeers() {
+      if (!mesh) return
+      const status = mesh.getStatus()
+      connectedPeers.textContent = status.connectedCount || 0
+    }
+
+    // Update send button state
+    function updateSendButtonState() {
+      sendBtn.disabled = !mesh || !mediaFileInput.files.length || !targetPeerInput.value.trim()
+    }
+
+    mediaFileInput.addEventListener('change', updateSendButtonState)
+    targetPeerInput.addEventListener('input', updateSendButtonState)
+
+    // Send media file
+    sendBtn.addEventListener('click', async () => {
+      const file = mediaFileInput.files[0]
+      const targetPeer = targetPeerInput.value.trim()
+
+      if (!file || !targetPeer || !mesh) return
+
+      try {
+        sendProgress.innerHTML = '<div class="status">Sending: ' + file.name + '...</div>'
+        sendBtn.disabled = true
+
+        await mesh.sendFile(targetPeer, file)
+
+        sendProgress.innerHTML = '<div class="status connected">Sent successfully!</div>'
+        setTimeout(() => {
+          sendProgress.innerHTML = ''
+        }, 3000)
+
+      } catch (error) {
+        console.error('Send error:', error)
+        sendProgress.innerHTML = '<div class="status error">Send failed: ' + error.message + '</div>'
+      } finally {
+        sendBtn.disabled = false
+        updateSendButtonState()
+      }
+    })
+
+    // Handle incoming stream
+    async function handleIncomingStream(event) {
+      try {
+        updateReceiveStatus('Receiving: ' + event.metadata.filename + '...', 'info')
+        
+        // Receive the stream
+        const chunks = []
+        const reader = event.stream.getReader()
+        let bytesReceived = 0
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          
+          chunks.push(value)
+          bytesReceived += value.byteLength
+
+          const progress = event.metadata.totalSize > 0 
+            ? Math.round((bytesReceived / event.metadata.totalSize) * 100)
+            : 0
+          
+          updateReceiveStatus(`Receiving: ${event.metadata.filename} (${progress}%)`, 'info')
+        }
+
+        // Create blob from chunks
+        const blob = new Blob(chunks, { type: event.metadata.mimeType })
+        currentMediaBlob = blob
+
+        updateReceiveStatus('Received! Playing media...', 'connected')
+
+        // Create and display media player
+        displayMedia(blob, event.metadata)
+
+      } catch (error) {
+        console.error('Receive error:', error)
+        updateReceiveStatus('Receive failed: ' + error.message, 'error')
+      }
+    }
+
+    // Display media in player
+    function displayMedia(blob, metadata) {
+      const isVideo = metadata.mimeType.startsWith('video/')
+      const isAudio = metadata.mimeType.startsWith('audio/')
+
+      if (!isVideo && !isAudio) {
+        updateReceiveStatus('Unsupported media type: ' + metadata.mimeType, 'error')
+        return
+      }
+
+      // Create object URL
+      const url = URL.createObjectURL(blob)
+
+      // Create media element
+      const mediaEl = document.createElement(isVideo ? 'video' : 'audio')
+      mediaEl.controls = true
+      mediaEl.autoplay = true
+      mediaEl.src = url
+      mediaEl.style.width = '100%'
+      mediaEl.style.display = 'block'
+
+      mediaEl.addEventListener('error', (e) => {
+        console.error('Media playback error:', e)
+        updateReceiveStatus('Playback error', 'error')
+      })
+
+      // Clear previous content and add new media
+      mediaContainer.innerHTML = ''
+      mediaContainer.appendChild(mediaEl)
+      mediaContainer.style.display = 'block'
+    }
+  </script>
+</body>
+</html>

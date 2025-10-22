@@ -304,6 +304,23 @@
       />
     </div>
     
+    <!-- Media Player -->
+    <div v-if="receivedMediaBlob" class="demo-section">
+      <h2>🎥 Media Player</h2>
+      <media-stream-player
+        ref="mediaPlayer"
+        :blob="receivedMediaBlob"
+        :mimeType="receivedMediaMimeType"
+        :controls="true"
+        :autoplay="true"
+        @error="handleMediaError"
+      />
+      <div class="button-group" style="margin-top: 12px;">
+        <button class="secondary" @click="downloadMedia">💾 Download</button>
+        <button class="secondary" @click="clearMedia">✖ Close</button>
+      </div>
+    </div>
+    
     <!-- Message Log -->
     <div class="demo-section">
       <h2>Event Log</h2>
@@ -327,7 +344,8 @@
       PeerSelector,
       HubConnection,
       EventLog,
-      ChatSection
+      ChatSection,
+      MediaStreamPlayer
     } from '../src/index.ts'
     
     const app = createApp({
@@ -343,7 +361,8 @@
         PeerSelector,
         HubConnection,
         EventLog,
-        ChatSection
+        ChatSection,
+        MediaStreamPlayer
       },
       setup() {
         const hubUrl = ref('wss://pigeonhub.fly.dev')
@@ -354,6 +373,9 @@
         const fileInputRef = ref(null)
         const messages = ref([])
         const messageHistory = ref([])
+        const receivedMediaBlob = ref(null)
+        const receivedMediaMimeType = ref('')
+        const mediaPlayer = ref(null)
         
         const messageText = ref('')
 
@@ -479,6 +501,14 @@
                   const stream = activeStreams.value.get(e.streamId)
                   if (stream) {
                     stream.receivedBlob = blob
+                  }
+                  
+                  // Check if it's a media file (video/audio)
+                  const mimeType = e.metadata.mimeType || blob.type
+                  if (mimeType.startsWith('video/') || mimeType.startsWith('audio/')) {
+                    receivedMediaBlob.value = blob
+                    receivedMediaMimeType.value = mimeType
+                    addMessage(`🎥 Media file ready to play: ${e.metadata.filename}`)
                   }
                 } catch (err) {
                   addMessage(`❌ Error receiving file: ${err.message}`)
@@ -786,6 +816,29 @@
           return `${peerId.substring(0, 8)}...${peerId.substring(peerId.length - 4)}`
         }
         
+        const handleMediaError = (error) => {
+          addMessage(`❌ Media player error: ${error}`)
+        }
+        
+        const downloadMedia = () => {
+          if (receivedMediaBlob.value) {
+            const url = URL.createObjectURL(receivedMediaBlob.value)
+            const a = document.createElement('a')
+            a.href = url
+            const ext = receivedMediaMimeType.value.split('/')[1] || 'media'
+            a.download = `media-${Date.now()}.${ext}`
+            a.click()
+            URL.revokeObjectURL(url)
+            addMessage(`💾 Downloaded media file`)
+          }
+        }
+        
+        const clearMedia = () => {
+          receivedMediaBlob.value = null
+          receivedMediaMimeType.value = ''
+          addMessage(`✖ Closed media player`)
+        }
+        
         onUnmounted(() => {
           if (unsubscribeMessage) {
             unsubscribeMessage()
@@ -802,6 +855,9 @@
           fileInputRef,
           messages,
           messageHistory,
+          receivedMediaBlob,
+          receivedMediaMimeType,
+          mediaPlayer,
           messageText,
           status,
           isConnected,
@@ -826,7 +882,10 @@
           dismissStream,
           downloadFile,
           formatTime,
-          formatPeerId
+          formatPeerId,
+          handleMediaError,
+          downloadMedia,
+          clearMedia
         }
       }
     })
